@@ -1,0 +1,42 @@
+const express = require("express");
+const bodyParser = require("body-parser");
+const { Configuration, OpenAIApi } = require("openai");
+
+
+const configuration = new Configuration({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+const openai = new OpenAIApi(configuration);
+
+const app = express();
+app.use(bodyParser.json());
+
+
+app.post("/webhook", async (req, res) => {
+  const query = req.body.queryResult.queryText; 
+
+  try {
+    
+    const response = await openai.createCompletion({
+      model: "text-davinci-003", // Модель OpenAI
+      prompt: query,
+      max_tokens: 150, // 
+    });
+
+    
+    const responseText = response.data.choices[0].text.trim();
+
+    
+    res.json({
+      fulfillmentText: responseText,
+    });
+  } catch (error) {
+    console.error("Ошибка при обработке запроса:", error);
+    res.json({
+      fulfillmentText: "Произошла ошибка при обработке запроса. Попробуйте позже.",
+    });
+  }
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`Сервер запущен на порту ${PORT}`));
